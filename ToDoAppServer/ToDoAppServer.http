@@ -1,0 +1,44 @@
+@ToDoAppServer_HostAddress = http://localhost:5139
+
+# Get all todo items
+GET {{ToDoAppServer_HostAddress}}/todo/
+Accept: application/json
+###
+
+# Get todo items with state parameter
+GET {{ToDoAppServer_HostAddress}}/todo?state=finished
+Accept: application/json
+###
+
+# Get a specific todo item by ID
+GET {{ToDoAppServer_HostAddress}}/todo/dc935e6a-a49b-49fc-afe7-d445ac5f7404
+Accept: application/json
+###
+
+# Create a new todo item
+POST {{ToDoAppServer_HostAddress}}/todo
+Content-Type: application/json
+
+{
+  "title": "New Task",
+  "state": 1,
+  "content": "Content for the new task"
+}
+###
+
+# Update an existing todo item by ID
+PUT {{ToDoAppServer_HostAddress}}/todo/{id}
+Content-Type: application/json
+
+{
+  "title": "Updated Task",
+  "state": 2,
+  "content": "Updated content for the task"
+}
+###
+
+# Delete a specific todo item by ID
+DELETE {{ToDoAppServer_HostAddress}}/todo/dc935e6a-a49b-49fc-afe7-d445ac5f7404
+Accept: application/json
+###
+
