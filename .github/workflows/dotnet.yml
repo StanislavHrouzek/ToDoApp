@@ -1,0 +1,57 @@
+name: CI/CD for ASP.NET Core and Vue to MonsterASP.net
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      sqlite:
+        image: nouchka/sqlite
+        ports:
+          - 3306:3306
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+
+    - name: Install dependencies for Vue
+      run: npm install
+      working-directory: ./todoappclient
+
+    - name: Build Vue project
+      run: npm run build
+      working-directory: ./todoappclient
+
+    - name: Restore dependencies for ASP.NET Core
+      run: dotnet restore
+
+    - name: Build ASP.NET Core project
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test ASP.NET Core project
+      run: dotnet test --no-restore --verbosity normal
+
+    - name: Publish ASP.NET Core project
+      run: dotnet publish --configuration Release --output ./publish
+
+    - name: Deploy to MonsterASP.net
+      uses: webapps/gh-actions@v1
+      with:
+        app-name: 'ToDoApp'
+        publish-profile: ${{ secrets.MONSTERASPNET_PUBLISH_PROFILE }}
