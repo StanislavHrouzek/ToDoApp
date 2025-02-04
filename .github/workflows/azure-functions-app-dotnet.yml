@@ -1,0 +1,71 @@
+name: CI/CD for ToDoApp Solution
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      sqlite:
+        image: nouchka/sqlite
+        ports:
+          - 3306:3306
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+
+    - name: Install dependencies for Vue
+      run: npm install
+      working-directory: ./todoappclient
+
+    - name: Build Vue project
+      run: npm run build
+      working-directory: ./todoappclient
+
+    - name: Restore dependencies for .NET projects
+      run: dotnet restore
+
+    - name: Build ToDoAppShared library
+      run: dotnet build --configuration Release --no-restore ./ToDoAppShared/ToDoAppShared.csproj
+
+    - name: Build ToDoAppServer project
+      run: dotnet build --configuration Release --no-restore ./ToDoAppServer/ToDoAppServer.csproj
+
+    - name: Test ToDoAppServer project
+      run: dotnet test --no-restore --verbosity normal ./ToDoAppServer/ToDoAppServer.csproj
+
+    - name: Publish ToDoAppServer project
+      run: dotnet publish --configuration Release --output ./publish ./ToDoAppServer/ToDoAppServer.csproj
+
+    - name: Start REST API server
+      run: dotnet ToDoAppServer.dll --urls "http://*:5139"
+      working-directory: ./ToDoAppServer/publish
+
+    - name: Start Vue client
+      run: npm start
+      env:
+        PORT: 64225
+      working-directory: ./todoappclient
+
+    - name: Deploy to MonsterASP.net
+      uses: webapps/gh-actions@v1
+      with:
+        app-name: 'your-app-name'
+        publish-profile: ${{ secrets.MONSTERASPNET_PUBLISH_PROFILE }}
+        package: './publish'
